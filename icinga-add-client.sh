@@ -5,13 +5,13 @@ W_WIDTH=12
 W_HEIGHT=60
 
 # set standard parameters
-FQND="server.imi.de"
-IP_OF_FQND="123.123.123.123"
+FQDN="server.imi.de"
+IP_OF_FQDN="123.123.123.123"
 PATH_OF_FILES="/home/ssn/Projekte/icinga-add-client/"
 
-# function to set fqnd
-function fqnd_ft {
-	FQND=$(whiptail --title "FQND of new client" --inputbox "Give me your clients FQND?" $W_WIDTH $W_HEIGHT $FQND 3>&1 1>&2 2>&3)
+# function to set FQDN
+function FQDN_ft {
+	FQDN=$(whiptail --title "FQDN of new client" --inputbox "Give me your clients FQDN?" $W_WIDTH $W_HEIGHT $FQDN 3>&1 1>&2 2>&3)
 	exitstatus=$?
 	if [ $exitstatus = 0 ]; then
   	:
@@ -19,9 +19,9 @@ function fqnd_ft {
     exit
 	fi
 }
-# function to set ip of fqnd
-function ip_of_fqnd_ft {
-	IP_OF_FQND=$(whiptail --title "IP of your new client" --inputbox "Give me the IP-Adresse of your new client?" $W_WIDTH $W_HEIGHT $IP_OF_FQND 3>&1 1>&2 2>&3)
+# function to set ip of FQDN
+function ip_of_FQDN_ft {
+	IP_OF_FQDN=$(whiptail --title "IP of your new client" --inputbox "Give me the IP-Adresse of your new client?" $W_WIDTH $W_HEIGHT $IP_OF_FQDN 3>&1 1>&2 2>&3)
 	exitstatus=$?
 	if [ $exitstatus = 0 ]; then
   	:
@@ -44,12 +44,12 @@ function path_of_files_ft {
 #function to check if ip is valid
 function check_ip_valid() {
 	# checks if ip is valid
-	if [[ $IP_OF_FQND =~ ^(([1-9]?[0-9]|1[0-9][0-9]|2([0-4][0-9]|5[0-5]))\.){3}([1-9]?[0-9]|1[0-9][0-9]|2([0-4][0-9]|5[0-5]))$ ]]; then
+	if [[ $IP_OF_FQDN =~ ^(([1-9]?[0-9]|1[0-9][0-9]|2([0-4][0-9]|5[0-5]))\.){3}([1-9]?[0-9]|1[0-9][0-9]|2([0-4][0-9]|5[0-5]))$ ]]; then
 		:
 	else
 		if [[ "$1" = "gui" ]]; then
 			whiptail --title "Invalid IP" --msgbox "try again !..." $W_WIDTH $W_HEIGHT
-			ip_of_fqnd_ft
+			ip_of_FQDN_ft
 		elif [[ "$1" = "silenc" ]]; then
 			:
 		else
@@ -71,10 +71,10 @@ function check_path_of_file_ending {
 #function to check if settings are correct
 function check_if_correct {
 # check if all correct
-	if (whiptail --title "Everything Correct?" --yesno "FQND = $FQND \nIP = $IP_OF_FQND \nPath = $PATH_OF_FILES \n \nare those correct?" $W_WIDTH $W_HEIGHT) then
+	if (whiptail --title "Everything Correct?" --yesno "FQDN = $FQDN \nIP = $IP_OF_FQDN \nPath = $PATH_OF_FILES \n \nare those correct?" $W_WIDTH $W_HEIGHT) then
 		# when settings are fine do: look at the path an check if files already exist with the same name
 		# check if files exist
-		if [[ $(find $PATH_OF_FILES -type f -name "$FQND.conf"|wc -l) -gt 0 ]];then
+		if [[ $(find $PATH_OF_FILES -type f -name "$FQDN.conf"|wc -l) -gt 0 ]];then
 			# when files exist do: ask to overwrite
 			if (whiptail --title "Some files already exist" --yesno "Should I overwrite your files Yes or No." $W_WIDTH $W_HEIGHT) then
 	    	:
@@ -88,28 +88,28 @@ function check_if_correct {
 	else
 		#if settings are not fine: ask which one are not fine
 		CORRECT=$(whiptail --title "Which one do you want to correct" --checklist --separate-output \
-		"Choose:" $W_WIDTH $W_HEIGHT 3 "FQND" "$FQND" OFF "IP" "$IP_OF_FQND" OFF "PATH" "$PATH_OF_FILES" OFF 3>&1 1>&2 2>&3)
+		"Choose:" $W_WIDTH $W_HEIGHT 3 "FQDN" "$FQDN" OFF "IP" "$IP_OF_FQDN" OFF "PATH" "$PATH_OF_FILES" OFF 3>&1 1>&2 2>&3)
 		if [[ -z "$CORRECT" ]]; then
-			#if settings was right do: create files
+			#if settings was right do: ask again if all correct
 			check_if_correct
 		else
 			# checking checkboxes
 		  while read CHOICE
 		  do
 		      case $CHOICE in
-		        FQND\ IP\ PATH ) fqnd_ft
-						ip_of_fqnd_ft
+		        FQDN\ IP\ PATH ) FQDN_ft
+						ip_of_FQDN_ft
 						path_of_files_ft
 		        ;;
-		        FQND\ IP ) fqnd_ft
-						ip_of_fqnd_ft
+		        FQDN\ IP ) FQDN_ft
+						ip_of_FQDN_ft
 		        ;;
-		        IP\ PATH ) ip_of_fqnd_ft
+		        IP\ PATH ) ip_of_FQDN_ft
 						path_of_files_ft
 		        ;;
-		        FQND ) fqnd_ft
+		        FQDN ) FQDN_ft
 		        ;;
-		        IP ) ip_of_fqnd_ft
+		        IP ) ip_of_FQDN_ft
 		        ;;
 		        PATH ) path_of_files_ft
 		        ;;
@@ -123,9 +123,9 @@ function check_if_correct {
 }
 # create / overwrite files
 function create_files {
-	echo "object Host \"$FQND\" {
+	echo "object Host \"$FQDN\" {
         import \"generic-host\"
-        address = \"$IP_OF_FQND\"
+        address = \"$IP_OF_FQDN\"
         vars.nrpe_agent = \"Ja\"
         vars.os = \"Linux\"
         vars.rolle = \"\"
@@ -140,139 +140,153 @@ function create_files {
         vars.notification[\"pager\"] = {
                 groups = [ \"administratoren\" ]
         }
-}" > $PATH_OF_FILES$FQND.conf
+}" > $PATH_OF_FILES$FQDN.conf
 
-if [[ $(find $PATH_OF_FILES -type d -name "$FQND"|wc -l) -gt 0 ]];then
+if [[ $(find $PATH_OF_FILES -type d -name "$FQDN"|wc -l) -gt 0 ]];then
 	# when files exist do nothing
 	:
 else
-	mkdir $PATH_OF_FILES$FQND
+	mkdir $PATH_OF_FILES$FQDN
 fi
 
 	echo "object Service \"apachestatus\" {
         import \"generic-service\"
-        host_name = \"$FQND\"
+        host_name = \"$FQDN\"
         check_command = \"check_apachastatus\"
-        vars.apache_hostname = \"$IP_OF_FQND\"
+        vars.apache_hostname = \"$IP_OF_FQDN\"
         vars.apache_slots_warn = \"150\"
         vars.apache_slots_critical = \"75\"
-}" > $PATH_OF_FILES$FQND/apachestatus.conf
+}" > $PATH_OF_FILES$FQDN/apachestatus.conf
 
 	echo "object Service \"apt\" {
         import \"generic-service\"
-        host_name = \"$FQND\"
+        host_name = \"$FQDN\"
         check_command = \"nrpe-check-1arg\"
-        vars.host = \"$IP_OF_FQND\"
+        vars.host = \"$IP_OF_FQDN\"
         vars.check = \"check_apt\"
 	enable_notifications = \"0\"
-}" > $PATH_OF_FILES$FQND/apt.conf
+}" > $PATH_OF_FILES$FQDN/apt.conf
 
 	echo "object Service \"disk\" {
         import \"generic-service\"
-        host_name = \"$FQND\"
+        host_name = \"$FQDN\"
         check_command = \"nrpe-check-1arg\"
-        vars.host = \"$IP_OF_FQND\"
+        vars.host = \"$IP_OF_FQDN\"
         vars.check = \"check_disk\"
-}" > $PATH_OF_FILES$FQND/disk.conf
+}" > $PATH_OF_FILES$FQDN/disk.conf
 
 	echo "object Service \"disk inodes\" {
         import \"generic-service\"
-        host_name = \"$FQND\"
+        host_name = \"$FQDN\"
         check_command = \"nrpe-check-1arg\"
-        vars.host = \"$IP_OF_FQND\"
+        vars.host = \"$IP_OF_FQDN\"
         vars.check = \"check_disk_inodes\"
-}" > $PATH_OF_FILES$FQND/disk_inodes.conf
+}" > $PATH_OF_FILES$FQDN/disk_inodes.conf
 
 	echo "object Service \"load\" {
         import \"generic-service\"
-        host_name = \"$FQND\"
+        host_name = \"$FQDN\"
         check_command = \"nrpe-check-1arg\"
-        vars.host = \"$IP_OF_FQND\"
+        vars.host = \"$IP_OF_FQDN\"
         vars.check = \"check_load\"
-}" > $PATH_OF_FILES$FQND/load.conf
+}" > $PATH_OF_FILES$FQDN/load.conf
 
 	echo "object Service \"md_raid\" {
         import \"generic-service\"
-        host_name = \"$FQND\"
+        host_name = \"$FQDN\"
         check_command = \"nrpe-check-1arg\"
-        vars.host = \"$IP_OF_FQND\"
+        vars.host = \"$IP_OF_FQDN\"
         vars.check = \"check_md_raid\"
-}" > $PATH_OF_FILES$FQND/md_raid.conf
+}" > $PATH_OF_FILES$FQDN/md_raid.conf
 
 	echo "object Service \"net traffic\" {
         import \"generic-service\"
-        host_name = \"$FQND\"
+        host_name = \"$FQDN\"
         check_command = \"nrpe-check-1arg\"
 	enable_notifications = \"0\"
-        vars.host = \"$IP_OF_FQND\"
+        vars.host = \"$IP_OF_FQDN\"
         vars.check = \"check_net_traffic\"
-}" > $PATH_OF_FILES$FQND/net_traffic.conf
+}" > $PATH_OF_FILES$FQDN/net_traffic.conf
 
 	echo "object Service \"reboot_required\" {
         import \"generic-service\"
-        host_name = \"$FQND\"
+        host_name = \"$FQDN\"
         check_command = \"nrpe-check-1arg\"
-        vars.host = \"$IP_OF_FQND\"
+        vars.host = \"$IP_OF_FQDN\"
         vars.check = \"check_reboot_required\"
 	enable_notifications = \"0\"
-}" > $PATH_OF_FILES$FQND/reboot_required.conf
+}" > $PATH_OF_FILES$FQDN/reboot_required.conf
 
 	echo "object Service \"rsnapshot\" {
         import \"generic-service\"
-        host_name = \"$FQND\"
+        host_name = \"$FQDN\"
         check_command = \"nrpe-check-1arg\"
-        vars.host = \"$IP_OF_FQND\"
+        vars.host = \"$IP_OF_FQDN\"
         vars.check = \"check_rsnapshot\"
-}" > $PATH_OF_FILES$FQND/rsnapshot.conf
+}" > $PATH_OF_FILES$FQDN/rsnapshot.conf
 
 	echo "object Service \"smart\" {
         import \"generic-service\"
-        host_name = \"$FQND\"
+        host_name = \"$FQDN\"
         check_command = \"nrpe-check-1arg\"
-        vars.host = \"$IP_OF_FQND\"
+        vars.host = \"$IP_OF_FQDN\"
         vars.check = \"check_smart\"
-}" > $PATH_OF_FILES$FQND/smart.conf
+}" > $PATH_OF_FILES$FQDN/smart.conf
 
 	echo "object Service \"smart_lsi\" {
         import \"generic-service\"
-        host_name = \"$FQND\"
+        host_name = \"$FQDN\"
         check_command = \"nrpe-check-1arg\"
-        vars.host = \"$IP_OF_FQND\"
+        vars.host = \"$IP_OF_FQDN\"
         vars.check = \"check_smart_lsi\"
-}" > $PATH_OF_FILES$FQND/smart_lsi.conf
+}" > $PATH_OF_FILES$FQDN/smart_lsi.conf
 
 	echo "object Service \"total procs\" {
         import \"generic-service\"
-        host_name = \"$FQND\"
+        host_name = \"$FQDN\"
         check_command = \"nrpe-check-1arg\"
-        vars.host = \"$IP_OF_FQND\"
+        vars.host = \"$IP_OF_FQDN\"
         vars.check = \"check_total_procs\"
-}" > $PATH_OF_FILES$FQND/total_procs.conf
+}" > $PATH_OF_FILES$FQDN/total_procs.conf
 
 	echo "object Service \"users\" {
         import \"generic-service\"
-        host_name = \"$FQND\"
+        host_name = \"$FQDN\"
         check_command = \"nrpe-check-1arg\"
-        vars.host = \"$IP_OF_FQND\"
+        vars.host = \"$IP_OF_FQDN\"
         vars.check = \"check_users\"
-}" > $PATH_OF_FILES$FQND/users.conf
+}" > $PATH_OF_FILES$FQDN/users.conf
 
 	echo "object Service \"zombie procs\" {
         import \"generic-service\"
-        host_name = \"$FQND\"
+        host_name = \"$FQDN\"
         check_command = \"nrpe-check-1arg\"
-        vars.host = \"$IP_OF_FQND\"
+        vars.host = \"$IP_OF_FQDN\"
         vars.check = \"check_zombie_procs\"
-}" > $PATH_OF_FILES$FQND/zombie_procs.conf
+}" > $PATH_OF_FILES$FQDN/zombie_procs.conf
+}
+
+#token counter
+FQDN_TK=0
+IP_OF_FQDN_TK=0
+PATH_OF_FILES_TK=0
+#counter
+function token() {
+	export $1=${!1}+1
+	if [[ $1 -gt 1 ]]; then
+		echo "Same parameters multipletimes - exit"
+		echo -e "Usage: icinga-add-client.sh for GUI OR\nGive parameters with flags: -f FQDN  -i ip -p path \ne.g: icinga-newclient.sh -f server.imi.de -i 123.123.123.123 -p /PATH/TO/SAVE/FILES"
+		exit
+	fi
 }
 
 if [ "$#" -eq 0 ] ;then
 
-# start of frotnend
-# asking for fqnd
-	fqnd_ft
-# asking for ip of fqnd
-	ip_of_fqnd_ft
+# start of frontend
+# asking for FQDN
+	FQDN_ft
+# asking for ip of FQDN
+	ip_of_FQDN_ft
 # asking of path of folder where to save files
 	path_of_files_ft
 # asking if settings are correct
@@ -282,18 +296,24 @@ if [ "$#" -eq 0 ] ;then
 	create_files
 	whiptail --title "Done" --msgbox "Already finished ;)" $W_WIDTH $W_HEIGHT
 
-#elif [[ ("$@" = "-h")  ||  ("$@" = "--help") || ("$@" = "-help")]]; then
-#	echo -e "Usage: icinga-add-client.sh for GUI OR\nGive parameters with flags: -f fqnd  -i ip -p path \ne.g: icinga-newclient.sh -f $FQND -i $IP_OF_FQND -p $PATH_OF_FILES"
+elif [[ ("$@" = "-h")  ||  ("$@" = "--help") || ("$@" = "-help") || ( ! -z "$7") ]]; then
+	echo -e "Usage: icinga-add-client.sh for GUI OR\nGive parameters with flags: -f FQDN  -i ip -p path \ne.g: icinga-newclient.sh -f server.imi.de -i 123.123.123.123 -p /PATH/TO/SAVE/FILES"
 else
-	while getopts f:i:p:h option
+	while getopts f:i:p: option
 	do
 		case "${option}" in
-	  	f) FQND=${OPTARG};;
-	    i) IP_OF_FQND=${OPTARG}
-			check_ip_valid "nogui";;
+	  	f) FQDN=${OPTARG}
+			token "FQDN_TK";;
+
+	    i) IP_OF_FQDN=${OPTARG}
+			check_ip_valid "nogui"
+			token "IP_OF_FQDN_TK";;
+
 	    p) PATH_OF_FILES=${OPTARG}
-			check_path_of_file_ending;;
-			*) echo -e "Usage: icinga-add-client.sh for GUI OR\nGive parameters with flags: -f fqnd  -i ip -p path \ne.g: icinga-newclient.sh -f server.imi.de -i 123.123.123.123 -p /PATH/TO/SAVE/FILES"
+			check_path_of_file_ending
+			token "PATH_OF_FILES_TK";;
+
+			*) echo -e "Usage: icinga-add-client.sh for GUI OR\nGive parameters with flags: -f FQDN  -i ip -p path \ne.g: icinga-newclient.sh -f server.imi.de -i 123.123.123.123 -p /PATH/TO/SAVE/FILES"
 			exit;;
 		esac
 	done
