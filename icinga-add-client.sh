@@ -1,17 +1,17 @@
 #!/bin/bash
 #set -x #debug
-# set wight bright of whiptail
+# set width and height of whiptail window
 W_WIDTH=12
 W_HEIGHT=60
 
 # set standard parameters
 FQDN="server.imi.de"
 IP_OF_FQDN="123.123.123.123"
-PATH_OF_FILES="/home/ssn/Projekte/icinga-add-client/"
+PATH_OF_FILES="/etc/icinga2/conf.d/hosts/"
 
 # function to set FQDN
 function FQDN_ft {
-	FQDN=$(whiptail --title "FQDN of new client" --inputbox "Give me your clients FQDN?" $W_WIDTH $W_HEIGHT $FQDN 3>&1 1>&2 2>&3)
+	FQDN=$(whiptail --title "FQDN of new client" --inputbox "Give me your host's FQDN?" $W_WIDTH $W_HEIGHT $FQDN 3>&1 1>&2 2>&3)
 	exitstatus=$?
 	if [ $exitstatus = 0 ]; then
   	:
@@ -19,9 +19,9 @@ function FQDN_ft {
     exit
 	fi
 }
-# function to set ip of FQDN
+# function to save the ip of the host as variable
 function ip_of_FQDN_ft {
-	IP_OF_FQDN=$(whiptail --title "IP of your new client" --inputbox "Give me the IP-Adresse of your new client?" $W_WIDTH $W_HEIGHT $IP_OF_FQDN 3>&1 1>&2 2>&3)
+	IP_OF_FQDN=$(whiptail --title "IP address of your new host" --inputbox "Enter your IP address of the new host?" $W_WIDTH $W_HEIGHT $IP_OF_FQDN 3>&1 1>&2 2>&3)
 	exitstatus=$?
 	if [ $exitstatus = 0 ]; then
   	:
@@ -30,9 +30,9 @@ function ip_of_FQDN_ft {
 	fi
 	check_ip_valid gui
 }
-# function to set path of files - saveing folder
+# function to set where the files should be stored
 function path_of_files_ft {
-	PATH_OF_FILES=$(whiptail --title "Path of file" --inputbox "Path to save new files?" $W_WIDTH $W_HEIGHT $PATH_OF_FILES 3>&1 1>&2 2>&3)
+	PATH_OF_FILES=$(whiptail --title "Path to store files" --inputbox "Where should the files be stored?" $W_WIDTH $W_HEIGHT $PATH_OF_FILES 3>&1 1>&2 2>&3)
 	exitstatus=$?
 	if [ $exitstatus = 0 ]; then
   	:
@@ -41,24 +41,23 @@ function path_of_files_ft {
 	fi
 	check_path_of_file_ending
 }
-#function to check if ip is valid
+#function to check if IP address is valid
 function check_ip_valid() {
-	# checks if ip is valid
+	# checks if IP address is valid
 	if [[ $IP_OF_FQDN =~ ^(([1-9]?[0-9]|1[0-9][0-9]|2([0-4][0-9]|5[0-5]))\.){3}([1-9]?[0-9]|1[0-9][0-9]|2([0-4][0-9]|5[0-5]))$ ]]; then
 		:
 	else
 		if [[ "$1" = "gui" ]]; then
-			whiptail --title "Invalid IP" --msgbox "try again !..." $W_WIDTH $W_HEIGHT
+			whiptail --title "Invalid IP address" --msgbox "Please try again ..." $W_WIDTH $W_HEIGHT
 			ip_of_FQDN_ft
-		elif [[ "$1" = "silenc" ]]; then
-			:
 		else
-			echo "invalid ip"
+			echo "invalid IP address"
 		fi
 		:
 	fi
 }
 
+# function to check if the path ends with a slash
 function check_path_of_file_ending {
 	if [[ $(echo "$PATH_OF_FILES"|grep '/$'|wc -l) -eq 0 ]]; then
 		PATH_OF_FILES="$PATH_OF_FILES/"
@@ -68,29 +67,28 @@ function check_path_of_file_ending {
 }
 
 
-#function to check if settings are correct
+# function to check if settings are correct
 function check_if_correct {
-# check if all correct
-	if (whiptail --title "Everything Correct?" --yesno "FQDN = $FQDN \nIP = $IP_OF_FQDN \nPath = $PATH_OF_FILES \n \nare those correct?" $W_WIDTH $W_HEIGHT) then
-		# when settings are fine do: look at the path an check if files already exist with the same name
-		# check if files exist
+# check if all settings are correct
+	if (whiptail --title "Check settings" --yesno "FQDN = $FQDN \nIP = $IP_OF_FQDN \nPath = $PATH_OF_FILES \n \nare those correct?" $W_WIDTH $W_HEIGHT) then
+		# check if configuration file for this host alreday exists
 		if [[ $(find $PATH_OF_FILES -type f -name "$FQDN.conf"|wc -l) -gt 0 ]];then
-			# when files exist do: ask to overwrite
-			if (whiptail --title "Some files already exist" --yesno "Should I overwrite your files Yes or No." $W_WIDTH $W_HEIGHT) then
+			# when file exist - do: ask to overwrite
+			if (whiptail --title "Configuration file already exists" --yesno "Should I overwrite your files?" $W_WIDTH $W_HEIGHT) then
 	    	:
 			else
-	    	echo "Bye Bye"
+	    	echo "Not overwriting files"
 				exit
 			fi
-		else # end of function check_if_correct - files not existing - settings are fine - do: function create files
+		else
 			:
 		fi
 	else
-		#if settings are not fine: ask which one are not fine
+		#if settings are not correct: ask which one are not correct
 		CORRECT=$(whiptail --title "Which one do you want to correct" --checklist --separate-output \
 		"Choose:" $W_WIDTH $W_HEIGHT 3 "FQDN" "$FQDN" OFF "IP" "$IP_OF_FQDN" OFF "PATH" "$PATH_OF_FILES" OFF 3>&1 1>&2 2>&3)
 		if [[ -z "$CORRECT" ]]; then
-			#if settings was right do: ask again if all correct
+			#if settings are correct do
 			check_if_correct
 		else
 			# checking checkboxes
@@ -113,10 +111,9 @@ function check_if_correct {
 		        ;;
 		        PATH ) path_of_files_ft
 		        ;;
-		        *) echo "should not outputted"
-		        ;;
 		      esac
 		  done <<< $CORRECT
+			# ask again if settings are correct
 			check_if_correct
 		fi
 	fi
@@ -266,11 +263,11 @@ fi
 }" > $PATH_OF_FILES$FQDN/zombie_procs.conf
 }
 
-#token counter
+# token counter
 FQDN_TK=0
 IP_OF_FQDN_TK=0
 PATH_OF_FILES_TK=0
-#counter
+# counter
 function token() {
 	export $1=${!1}+1
 	if [[ $1 -gt 1 ]]; then
@@ -282,23 +279,24 @@ function token() {
 
 if [ "$#" -eq 0 ] ;then
 
-# start of frontend
-# asking for FQDN
+	# start of frontend
+	# ask for FQDN
 	FQDN_ft
-# asking for ip of FQDN
+	# ask for ip of FQDN
 	ip_of_FQDN_ft
-# asking of path of folder where to save files
+	# ask for path of folder where to save files
 	path_of_files_ft
-# asking if settings are correct
+	# ask if settings are correct
 	check_if_correct
-# creating files
+	# creating files
 	whiptail --title "Create files" --msgbox "creating files..." $W_WIDTH $W_HEIGHT
 	create_files
 	whiptail --title "Done" --msgbox "Already finished ;)" $W_WIDTH $W_HEIGHT
-
+# output help / usage
 elif [[ ("$@" = "-h")  ||  ("$@" = "--help") || ("$@" = "-help") || ( ! -z "$7") ]]; then
 	echo -e "Usage: icinga-add-client.sh for GUI OR\nGive parameters with flags: -f FQDN  -i ip -p path \ne.g: icinga-newclient.sh -f server.imi.de -i 123.123.123.123 -p /PATH/TO/SAVE/FILES"
 else
+	# catching parameters
 	while getopts f:i:p: option
 	do
 		case "${option}" in
