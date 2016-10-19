@@ -261,6 +261,14 @@ fi
         vars.host = \"$IP_OF_FQDN\"
         vars.check = \"check_zombie_procs\"
 }" > $PATH_OF_FILES$FQDN/zombie_procs.conf
+
+	echo "object Service \"megaraid\" {
+        import \"generic-service\"
+        host_name = \"$FQDN\"
+        check_command = \"nrpe-check-1arg\"
+        vars.host = \"$IP_OF_FQDN\"
+        vars.check = \"check_megaraid_sas\"
+}" > $PATH_OF_FILES$FQDN/megaraid_sas.conf
 }
 
 # token counter
