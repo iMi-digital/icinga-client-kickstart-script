@@ -151,8 +151,8 @@ fi
         host_name = \"$FQDN\"
         check_command = \"check_apachastatus\"
         vars.apache_hostname = \"$IP_OF_FQDN\"
-        vars.apache_slots_warn = \"150\"
-        vars.apache_slots_critical = \"75\"
+        vars.apache_slots_warn = \"50\"
+        vars.apache_slots_critical = \"25\"
 }" > $PATH_OF_FILES$FQDN/apachestatus.conf
 
 	echo "object Service \"apt\" {
@@ -269,6 +269,13 @@ fi
         vars.host = \"$IP_OF_FQDN\"
         vars.check = \"check_megaraid_sas\"
 }" > $PATH_OF_FILES$FQDN/megaraid_sas.conf
+
+	echo "object Service \"cert $FDQN\" {
+        import \"generic-service\"
+        host_name = \"$FQDN\"
+        check_command = \"nrpe-check-1arg\"
+        vars.host = \"$FQDN\"
+}" > $PATH_OF_FILES$FQDN/ssl_certificate.conf
 }
 
 # token counter
